@@ -34,6 +34,9 @@ Se tudo correu bem até aqui: rode o projeto com
 
 Algumas screenshots:
 
+![Claw Finger](./assets/claw-finger-screenshots/scr_01.png)
+
+![Claw Finger demo](./assets/claw-finger-screenshots/claw_finger_demo.gif)
 
 
 ### Notas:
