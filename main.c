@@ -279,8 +279,34 @@ int main(void){
 			// evitando que o modelo fique de cabeça pra baixo 
 			if( ((ptrSelectedEntity->scale) + newScaleToModel) >= 0.0000f){
 				ptrSelectedEntity->scale += newScaleToModel;
+			}	
+		}
+
+		/*
+			Movimento do modelo no eixo Y
+			(Espero que funcione de primeira kkkk)
+		*/
+		if((ptrSelectedEntity != NULL) && (currentInput.moveModelInYAxisToUp || currentInput.moveModelInYAxisToDown)){
+
+			/*
+				Acho que seria interessante calcular a distância com base na escala atual do modelo,
+				mas por hora, vai ficar assim mesmo
+			*/
+			float distance = 1.15f;
+
+			Vector3 movementInYAxis = {0.0f, 0.0f, 0.0f};
+
+			if(currentInput.moveModelInYAxisToUp) {
+				printf("::[Debug]:: Movimento para cima!\n");
+				movementInYAxis.y += distance;
+				ptrSelectedEntity->positionInWorld = Vector3Add(ptrSelectedEntity->positionInWorld, movementInYAxis);
 			}
-			
+
+			if(currentInput.moveModelInYAxisToDown) {
+				printf("::[Debug]:: Movimento para baixo!\n");
+				movementInYAxis.y += distance;
+				ptrSelectedEntity->positionInWorld = Vector3Subtract(ptrSelectedEntity->positionInWorld, movementInYAxis);
+			}
 
 		}
 

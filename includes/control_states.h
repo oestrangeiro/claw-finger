@@ -44,14 +44,21 @@ typedef struct {
 				selecionar e "desselecionar" o modelo.
 
 	*/ 
-	bool toggleCursor;	// Tecla Tab
+	bool toggleCursor;			// Tecla Tab
 	bool mouseLeftClick;
-	bool toggleWireFrameMode; // F1
-	bool isFileDropped; // Mecânica de Drag n Drop
-	bool grabModel;		// Tecla G
+	bool toggleWireFrameMode; 	// F1
+	bool isFileDropped; 		// Mecânica de Drag n Drop
+	bool grabModel;				// Tecla G
 
 
-	float getMouseWheelToScaleModel;
+	float getMouseWheelToScaleModel; // Scroll
+
+	/*
+		Como alguns modelos estão spawnando com metade do modelo abaixo do plano Y
+		Vou fazer a mecânica de mover o objeto no eixo Y logo
+	*/ 
+	bool moveModelInYAxisToUp; 		// Tecla Y
+	bool moveModelInYAxisToDown;		// Tecla B
 
 } ControlState;
 

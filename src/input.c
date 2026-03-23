@@ -54,6 +54,13 @@ ControlState GetCurrentState(void){
 	currentControlState.grabModel 					= IsKeyDown(KEY_G);
 	currentControlState.getMouseWheelToScaleModel	= GetMouseWheelMove();
 
+	/*
+		Movimento do modelo no eixo Y
+	*/
+
+	currentControlState.moveModelInYAxisToUp 		= IsKeyDown(KEY_Y);
+	currentControlState.moveModelInYAxisToDown 		= IsKeyDown(KEY_B);
+
 
 	return currentControlState;
 }
