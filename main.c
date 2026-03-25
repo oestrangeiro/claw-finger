@@ -15,9 +15,34 @@
 				4.1.1) Nome do arquivo do modelo [X]
 				4.1.2) Posição do modelo (X, Y, Z) [X]
 				4.1.3) Número de polígonos do modelo [X]
-			4.2) Alterar a posição do modelo no eixo Y (alguns modelos estão spawnando abaixo do chão)
+			4.2) Alterar a posição do modelo no eixo Y (alguns modelos estão spawnando abaixo do chão) [X]
 		5) Drag 'N' Drop de modelos para dentro do visualizador
 		6) Abstração dos modelos para uma struct Entity [X]
+		7) Implementar lista ligada simples para que seja possível adicionar N modelos na cena em tempo de execução
+		8) Fazer um debug com as informações do modelo mais legível (vide itens 4.1.x)
+
+		[BUG FIX]:
+			@date: 23/03/2026
+			@author: Mateus 'oestrangeiro' Almeida
+			Era possível alterar o eixo Y do modelo sem que ele estivesse selecionado, bastava selecionar uma vez e desselecionar
+			que o ponteiro apontava para o endereço do modelo e na hora de processar os inputs do usuário referentes à alteração
+			do eixo Y do modelo (teclas Y e B), eu não checava se o campo isSelected estava true, apenas estava fazendo um
+			null checking em ptrSelectedEntity. Antes de subir pro github, vou fazer mais alguns testes.
+
+		[Bugs]:
+			@date: 23/03/2026
+			@author: Mateus 'oestrangeiro' Almeida
+
+			1) Valor de mudança de escala do modelo e valor de distância percorrida no eixo Y estão, ambas, estáticas, sendo
+			que elas devem se adequar ao tamanho do modelo. Talvez a nona ou décima parte?
+			distance 		= ptrSelectedEntity->model->scale * 0.1;
+			sensivityScale 	= ptrSelectedEntity->model->scale * 0.1;
+
+			2) A bounding box do modelo só está sendo atualizada no momento do grab mode com o deslocamento do modelo com o mouse.
+			Se o usuário deslocar o modelo no eixo Y e/ou modificar a escala do mesmo, a BB não é atualizada, sendo necessário que
+			eu ative o grab mode e desloque o modelo para atualizar a BB. Talvez seja necessário eu fazer uma função que recebe o
+			ponteiro do modelo e altere a BB à cada frame!
+
 
 	[*] Nunca esquecer:
 		Só programe aquilo que for usar e matenha as coisas estupidamente simples!
@@ -271,7 +296,7 @@ int main(void){
 			Scale do modelo
 		*/
 
-		if((ptrSelectedEntity != NULL) && (currentInput.getMouseWheelToScaleModel != 0)){
+		if((ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected) && (currentInput.getMouseWheelToScaleModel != 0)){
 			// umentando a escala do modelo
 			float sensivityScale = 1.0f;
 			float newScaleToModel =  (currentInput.getMouseWheelToScaleModel * sensivityScale);
@@ -286,7 +311,7 @@ int main(void){
 			Movimento do modelo no eixo Y
 			(Espero que funcione de primeira kkkk)
 		*/
-		if((ptrSelectedEntity != NULL) && (currentInput.moveModelInYAxisToUp || currentInput.moveModelInYAxisToDown)){
+		if((ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected) && (currentInput.moveModelInYAxisToUp || currentInput.moveModelInYAxisToDown)){
 
 			/*
 				Acho que seria interessante calcular a distância com base na escala atual do modelo,
