@@ -1,7 +1,5 @@
 #include "raylib.h"
-#include <stdio.h>
-
-#include "../includes/control_states.h" // Struct ControlState
+#include "../includes/control_states.h"
 #include "../includes/input.h"
 
 

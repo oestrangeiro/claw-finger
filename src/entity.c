@@ -70,3 +70,22 @@ Vector3 CalculateTheCenterPointOfModel(Vector3 entityBoundsMin, Vector3 entityBo
 
 	return centerPointOfModel;
 }
+
+void ResetEntityPosition(Entity *ptrEntity){
+
+	ptrEntity->positionInWorld.x = 0.0f;
+	ptrEntity->positionInWorld.y = 0.0f;
+	ptrEntity->positionInWorld.z = 0.0f;
+
+}
+
+void UpdateBoundingBoxOfModel(Entity *ptrEntity){
+
+	BoundingBox modelBox 	= GetModelBoundingBox(ptrEntity->model);
+	modelBox.min 			= Vector3Scale(modelBox.min, ptrEntity->scale);
+	modelBox.max			= Vector3Scale(modelBox.max, ptrEntity->scale);
+
+
+	ptrEntity->bounds.min = Vector3Add(modelBox.min, ptrEntity->positionInWorld);
+	ptrEntity->bounds.max = Vector3Add(modelBox.max, ptrEntity->positionInWorld);
+}

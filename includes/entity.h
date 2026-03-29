@@ -47,5 +47,8 @@ unsigned int CalculateNumOfTrianglesInModel(Entity entity);
 
 Vector3 CalculateTheCenterPointOfModel(Vector3 entityBoundsMin, Vector3 entityBoundsMax);
 
+void ResetEntityPosition(Entity *ptrEntity);
+void UpdateBoundingBoxOfModel(Entity *ptrEntity);
+
 
 #endif

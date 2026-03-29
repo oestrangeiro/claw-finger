@@ -20,14 +20,24 @@
 		6) Abstração dos modelos para uma struct Entity [X]
 		7) Implementar lista ligada simples para que seja possível adicionar N modelos na cena em tempo de execução
 		8) Fazer um debug com as informações do modelo mais legível (vide itens 4.1.x)
+		9) Fazer uma text box com informações sobre fps e posição da câmera no mundo
+			9.1) Procurar uma fonte legalzinha pra enfiar na textbox
+		10) Implementar aceleração ao deslocar modelos
+
 
 		[BUG FIX]:
 			@date: 23/03/2026
 			@author: Mateus 'oestrangeiro' Almeida
-			Era possível alterar o eixo Y do modelo sem que ele estivesse selecionado, bastava selecionar uma vez e desselecionar
+
+			1) Era possível alterar o eixo Y do modelo sem que ele estivesse selecionado, bastava selecionar uma vez e desselecionar
 			que o ponteiro apontava para o endereço do modelo e na hora de processar os inputs do usuário referentes à alteração
 			do eixo Y do modelo (teclas Y e B), eu não checava se o campo isSelected estava true, apenas estava fazendo um
 			null checking em ptrSelectedEntity. Antes de subir pro github, vou fazer mais alguns testes.
+			
+			2) A bounding box do modelo só está sendo atualizada no momento do grab mode com o deslocamento do modelo com o mouse.
+			Se o usuário deslocar o modelo no eixo Y e/ou modificar a escala do mesmo, a BB não é atualizada, sendo necessário que
+			eu ative o grab mode e desloque o modelo para atualizar a BB. Talvez seja necessário eu fazer uma função que recebe o
+			ponteiro do modelo e altere a BB à cada frame!
 
 		[Bugs]:
 			@date: 23/03/2026
@@ -38,10 +48,8 @@
 			distance 		= ptrSelectedEntity->model->scale * 0.1;
 			sensivityScale 	= ptrSelectedEntity->model->scale * 0.1;
 
-			2) A bounding box do modelo só está sendo atualizada no momento do grab mode com o deslocamento do modelo com o mouse.
-			Se o usuário deslocar o modelo no eixo Y e/ou modificar a escala do mesmo, a BB não é atualizada, sendo necessário que
-			eu ative o grab mode e desloque o modelo para atualizar a BB. Talvez seja necessário eu fazer uma função que recebe o
-			ponteiro do modelo e altere a BB à cada frame!
+			@date: 29/03/2026
+			1) Não é possível alterar o eixo Y de um modelo sem antes alterar a escala do mesmo. Não faço a mínima ideia do por quê.
 
 
 	[*] Nunca esquecer:
@@ -61,16 +69,16 @@
 #include "includes/control_states.h"
 #include "includes/input.h"
 #include "includes/entity.h"
+#include "includes/ui.h"
 
+#define DEBUG_MODE 0
 
-#define MAX_ENTITIES_IN_WORLD 	1
-#define FONT_SIZE 				15
+#define MAX_ENTITIES_IN_WORLD 		1
+#define NUM_OF_TILES				100
+#define	SIZE_OF_TILES				10
+#define NUM_OF_FACES_ORIGIN_LINES 	20
+#define THICKNESS_OF_ORIGIN_LINES	0.05f
 
-// Tiles da grid desenhada no chão
-#define NUM_OF_TILES			100
-#define	SIZE_OF_TILES			10
-
-// Enum pra caralho kkkkkk
 typedef enum {
 	DISABLE_CURSOR = 0,
 	ENABLE_CURSOR
@@ -81,20 +89,6 @@ typedef enum {
 	ENABLE_WIREFRAME_MODE
 } Wireframe;
 
-typedef enum {
-	MODEL_HIT = 1
-} ModelFlags;
-
-// Protótipo das funções
-// TODO: Jogar num header depois
-void SetWindowAttributes(Window *w);
-void render_model(Model model, Vector3 *modelPosition, float rotation, Color color);
-void reset_model_position(Vector3 *modelPosition);
-// void camera_custom_movement(Camera3D *cam);
-void UpdateCustomCameraMovement(Camera3D *cam, ControlState input);
-void DrawOriginLineAxis(float thickness, int slices);
-
-
 int main(void){
 
 	int modelsLoaded					= 0;
@@ -104,8 +98,7 @@ int main(void){
 	static float rotationX 				= 0.0f, rotationY = 0.0f, rotationZ = 0.0f;
 	unsigned int numOfTrianglesInModel  = 0;
 	int toggleGrabModelState 			= 0;
-	
-	Vector2 mousePosition = { 0.0f, 0.0f };
+	static float sensivityScale			= 0.0f;
 	
 
     Window window, *w;
@@ -129,24 +122,24 @@ int main(void){
     /*
 		Tudo o que for aparecer na tela deve ser carregado a partir daqui
     */
+   char logInfo[] = "FPS: 60\nCamera position: 0.0, 0.0, 0.0 (mocked)";
+
+   TextBox textBox = {
+		.textBoxColor 		= {0, 0, 0, 128},
+		.textBoxTextColor 	= WHITE,
+		.textBoxRectangle 	= { .x = 0, .y = 0, .height = 180, .width = 270}
+   };
+
 
 	Entity arrayEntity[MAX_ENTITIES_IN_WORLD];
-
 	Entity e1 = InitializeEntity("assets/models/Creative_Commons/Lycaste_Virginalis/Lycaste_virginalis-150k.gltf", "plant_model", (Vector3) {10.0f, 10.0f, 0.0f}, 50.0f);
-	
-	
-
 	arrayEntity[0] = e1;
-	
-
 	Entity *ptrSelectedEntity = NULL;
 
     DisableCursor();
     
     // Main game loop
     while (!WindowShouldClose()){
-
-
 
     	// Pega o estado atual de decisão à cada frame
     	ControlState currentInput = GetCurrentState();
@@ -181,21 +174,18 @@ int main(void){
 		BeginMode3D(cam);
 
 		// Grossura, Numero de faces
-    	DrawOriginLineAxis(0.05f, 20);
+    	DrawOriginLineAxis(THICKNESS_OF_ORIGIN_LINES, NUM_OF_FACES_ORIGIN_LINES);
 
 		// Desenhando o Modelo com ou sem wireframe
 		if(wireFrameState == ENABLE_WIREFRAME_MODE){
 			for(int i = 0; i < MAX_ENTITIES_IN_WORLD; i++){
 				DrawModelWires(arrayEntity[i].model, arrayEntity[i].positionInWorld, arrayEntity[i].scale, GREEN);
-				DrawBoundingBox(
-					arrayEntity[i].bounds, RED
-					);
-				// Desenhando o ponto central do model
+				DrawBoundingBox(arrayEntity[i].bounds, RED);
 				DrawSphere(arrayEntity[i].centerPoint, 0.5f, RED);
 					
 			}
-			// printf("[!] Wireframe ativado!\n");
-		}else{
+		}
+		else{
 			for(int i = 0; i < MAX_ENTITIES_IN_WORLD; i++){
 				DrawModel(
 					arrayEntity[i].model,
@@ -204,7 +194,6 @@ int main(void){
 					arrayEntity[i].isSelected == true ? RED : WHITE
 				);
 			}
-			// printf("[!] Wireframe desativado!\n");
 		}
 
 
@@ -254,10 +243,13 @@ int main(void){
 
 					if(ptrSelectedEntity->isSelected && currentInput.grabModel){
 						toggleGrabModelState = 1;
-						printf(":[Debug]: '%s' Grab model state: TRUE\n", ptrSelectedEntity->name);
+
 						Ray ray = GetMouseRay(GetMousePosition(), cam);
 
-					    
+					    /*
+							Se o raio (do mouse) acertou o chão enquanto seguro G,
+							movimento o modelo para onde o mouse aponta
+						*/
 					    if(ray.direction.y != 0){
 					    	float distance = -ray.position.y / ray.direction.y; 
 
@@ -267,16 +259,7 @@ int main(void){
 					    		ptrSelectedEntity->positionInWorld.x = hitPoint.x;
 						        ptrSelectedEntity->positionInWorld.z = hitPoint.z;
 
-						        
-						        BoundingBox modelBox 		  = GetModelBoundingBox(ptrSelectedEntity->model);
-
-						        if(ptrSelectedEntity->scale != 1.0f){
-							        modelBox.min 			      = Vector3Scale(modelBox.min, ptrSelectedEntity->scale);
-							        modelBox.max 			      = Vector3Scale(modelBox.max, ptrSelectedEntity->scale);
-						        }
-
-						        ptrSelectedEntity->bounds.min = Vector3Add(modelBox.min, ptrSelectedEntity->positionInWorld);
-						        ptrSelectedEntity->bounds.max = Vector3Add(modelBox.max, ptrSelectedEntity->positionInWorld);
+								UpdateBoundingBoxOfModel(ptrSelectedEntity);
 
 						        // Ajustando o center point
 						        ptrSelectedEntity->centerPoint = CalculateTheCenterPointOfModel(ptrSelectedEntity->bounds.min, ptrSelectedEntity->bounds.max);
@@ -284,9 +267,10 @@ int main(void){
 					    }
 						
 					}else{
-						printf(":[Debug]: '%s' Grab model state: FALSE\n", ptrSelectedEntity->name);
+						#if DEBUG
+							printf(":[Debug]: '%s' Grab model state: FALSE\n", ptrSelectedEntity->name);
+						#endif
 						toggleGrabModelState = 0;
-						// ptrSelectedEntity->isSelected = false;
 					}
 				}
 			// }
@@ -297,19 +281,32 @@ int main(void){
 		*/
 
 		if((ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected) && (currentInput.getMouseWheelToScaleModel != 0)){
-			// umentando a escala do modelo
-			float sensivityScale = 1.0f;
+			// aumentando a escala do modelo
+			sensivityScale = ptrSelectedEntity->scale * 0.1f;
+
+			#if DEBUG_MODE
+				printf("::[Debug]:: sensivityScale: %.5f\n", sensivityScale);
+			#endif
+
 			float newScaleToModel =  (currentInput.getMouseWheelToScaleModel * sensivityScale);
 
 			// evitando que o modelo fique de cabeça pra baixo 
 			if( ((ptrSelectedEntity->scale) + newScaleToModel) >= 0.0000f){
 				ptrSelectedEntity->scale += newScaleToModel;
-			}	
+				UpdateBoundingBoxOfModel(ptrSelectedEntity);
+			}
+
+		}
+
+		/*
+			Reset da posição do modelo para a origem (0, 0, 0)
+		*/
+		if((ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected) && currentInput.resetModelPosition){
+			ResetEntityPosition(ptrSelectedEntity);
 		}
 
 		/*
 			Movimento do modelo no eixo Y
-			(Espero que funcione de primeira kkkk)
 		*/
 		if((ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected) && (currentInput.moveModelInYAxisToUp || currentInput.moveModelInYAxisToDown)){
 
@@ -317,20 +314,24 @@ int main(void){
 				Acho que seria interessante calcular a distância com base na escala atual do modelo,
 				mas por hora, vai ficar assim mesmo
 			*/
-			float distance = 1.15f;
+			float distance = sensivityScale;
 
 			Vector3 movementInYAxis = {0.0f, 0.0f, 0.0f};
 
 			if(currentInput.moveModelInYAxisToUp) {
-				printf("::[Debug]:: Movimento para cima!\n");
 				movementInYAxis.y += distance;
 				ptrSelectedEntity->positionInWorld = Vector3Add(ptrSelectedEntity->positionInWorld, movementInYAxis);
+				UpdateBoundingBoxOfModel(ptrSelectedEntity);
+				// Ajustando o center point
+				ptrSelectedEntity->centerPoint = CalculateTheCenterPointOfModel(ptrSelectedEntity->bounds.min, ptrSelectedEntity->bounds.max);
 			}
 
 			if(currentInput.moveModelInYAxisToDown) {
-				printf("::[Debug]:: Movimento para baixo!\n");
 				movementInYAxis.y += distance;
 				ptrSelectedEntity->positionInWorld = Vector3Subtract(ptrSelectedEntity->positionInWorld, movementInYAxis);
+				UpdateBoundingBoxOfModel(ptrSelectedEntity);
+				// Ajustando o center point
+				ptrSelectedEntity->centerPoint = CalculateTheCenterPointOfModel(ptrSelectedEntity->bounds.min, ptrSelectedEntity->bounds.max);
 			}
 
 		}
@@ -340,21 +341,7 @@ int main(void){
 		// FIM 
 		EndMode3D();
 		
-		int paddingBottom = 15;
-		
-		/*
-			Desenhando texto pra debug na tela. Depois faço uma função LogInfo pra isso
-		*/
-		if(ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected){
-			
-			DrawText(TextFormat("[!] Model '%s' selected! Filepath: '%s'", ptrSelectedEntity->name, ptrSelectedEntity->pathToFileModel), 5, (paddingBottom * 1) + FONT_SIZE, FONT_SIZE, LIME);
-			DrawText(TextFormat("[!] Position: X: %.2f Y: %.2f Z: %.2f ", ptrSelectedEntity->positionInWorld.x, ptrSelectedEntity->positionInWorld.y, ptrSelectedEntity->positionInWorld.z ), 5, (paddingBottom * 2) + FONT_SIZE, FONT_SIZE, LIME);
-			DrawText(TextFormat("[!] Number of polygons in model : %ld", ptrSelectedEntity->triangles), 5, (paddingBottom * 3) + FONT_SIZE, FONT_SIZE, LIME);
-			DrawText(TextFormat("[!] Scale : %.2f", ptrSelectedEntity->scale), 5, (paddingBottom * 4) + FONT_SIZE, FONT_SIZE, LIME);
-			DrawText(TextFormat("[!] GRAB MODE: %s", toggleGrabModelState == 1 ? "true" : "false"), 5, (paddingBottom * 5) + FONT_SIZE, FONT_SIZE, LIME);
-		}
-        
-		DrawText(TextFormat("[!] FPS: %d", GetFPS()), 5, 150, 20, RED);
+		DrawTextBox(textBox, logInfo);
    		EndDrawing();
    		
    	 }	 // Fim do loop while
@@ -368,115 +355,4 @@ int main(void){
     
 
     return 0;
-}
-
-
-// Não usada
-void reset_model_position(Vector3 *modelPosition){
-	// Origem
-	Vector3 originCoordenates = { 0.0f, 0.0f, 0.0f };
-	
-	modelPosition->x = originCoordenates.x;
-	modelPosition->y = originCoordenates.y;
-	modelPosition->z = originCoordenates.z;
-
-	printf("[!] Posição do modelo resetada para: X:%.2f  Y:%.2f  Z:  %.2f\n", modelPosition->x, modelPosition->y, modelPosition->z);
-}	
-
-// Não usada
-void render_model(Model model, Vector3 *modelPosition, float rotation, Color color){
-
-	DrawModelEx(
-				model,
-				(Vector3) { modelPosition->x, modelPosition->y, modelPosition->z },
-				(Vector3) {0, 1, 0},
-				rotation,
-				(Vector3) {1, 1, 1},
-				color
-	);
-}
-
-
-/*
-	As linhas dos eixos X, Y e Z partindo da origem.
-	Como o raylib não permite que ajustemos a "grossura" das linhas,
-	a manha aqui é desenhar cilindros e colorir eles pra simular 3
-	linhas partindo da origem
-*/
-void DrawOriginLineAxis(float thickness, int slices){
-
-	float maxDistanceFromOriginPoint = (NUM_OF_TILES * SIZE_OF_TILES) / 2;
-
-	// Ponto comum dos três eixos
-	Vector3 originPoint = {0.0f, 0.0f, 0.0f};
-
-	Vector3 limitPointXToLeft  		= {-maxDistanceFromOriginPoint, 0.0f, 0.0f};
-	Vector3 limitPointXToRight  	= {maxDistanceFromOriginPoint, 0.0f, 0.0f};
-
-	Vector3 limitPointYToUp			= {0.0f, maxDistanceFromOriginPoint, 0.0f};
-	Vector3 limitPointYToBottom		= {0.0f, -maxDistanceFromOriginPoint, 0.0f};
-
-	Vector3 limitPointZToRight 		= {0.0f, 0.0f, maxDistanceFromOriginPoint};
-	Vector3 limitPointZToLeft 		= {0.0f, 0.0f, -maxDistanceFromOriginPoint};
-
-	// Eixo X
-	DrawCylinderEx(
-		originPoint,
-		limitPointXToRight,
-		thickness,
-		thickness, 
-		slices,
-		RED
-	);
-	DrawCylinderEx(
-		originPoint,
-		limitPointXToLeft,
-		thickness,
-		thickness,
-		slices,
-		RED
-	);
-
-	// EIXO Y
-	DrawCylinderEx(
-		originPoint,
-		limitPointYToUp,
-		thickness,
-		thickness, 
-		slices,
-		BLUE
-	);
-	DrawCylinderEx(
-		originPoint,
-		limitPointYToBottom,
-		thickness,
-		thickness,
-		slices,
-		BLUE
-	);
-
-	// Eixo Z
-	DrawCylinderEx(
-		originPoint,
-		limitPointZToRight,
-		thickness,
-		thickness, 
-		slices,
-		LIME
-	);
-	DrawCylinderEx(
-		originPoint,
-		limitPointZToLeft,
-		thickness,
-		thickness,
-		slices,
-		LIME
-	);
-
-	// DrawLine3D(originPoint, limitPointXToLeft,   BLUE);
-	// DrawLine3D(originPoint, limitPointXToRight,  BLUE);
-	// DrawLine3D(originPoint, limitPointYToLeft,   GREEN);
-	// DrawLine3D(originPoint, limitPointYToRight,  GREEN);
-	// DrawLine3D(originPoint, limitPointZToUp, 	 ORANGE);
-	// DrawLine3D(originPoint, limitPointZToBottom, ORANGE);
 }
