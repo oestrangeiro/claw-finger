@@ -37,7 +37,7 @@
 			2) A bounding box do modelo só está sendo atualizada no momento do grab mode com o deslocamento do modelo com o mouse.
 			Se o usuário deslocar o modelo no eixo Y e/ou modificar a escala do mesmo, a BB não é atualizada, sendo necessário que
 			eu ative o grab mode e desloque o modelo para atualizar a BB. Talvez seja necessário eu fazer uma função que recebe o
-			ponteiro do modelo e altere a BB à cada frame!
+			ponteiro do modelo e altere a BB à cada frame
 
 		[Bugs]:
 			@date: 23/03/2026
