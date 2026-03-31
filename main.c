@@ -303,6 +303,7 @@ int main(void){
 		*/
 		if((ptrSelectedEntity != NULL && ptrSelectedEntity->isSelected) && currentInput.resetModelPosition){
 			ResetEntityPosition(ptrSelectedEntity);
+			UpdateBoundingBoxOfModel(ptrSelectedEntity);
 		}
 
 		/*
