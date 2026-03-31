@@ -29,6 +29,7 @@ Se tudo correu bem até aqui: rode o projeto com
   - `G`: Enquanto um modelo estiver selecionado, segure `G` e você poderá deslocá-lo com o ponteiro do mouse
   - `Y` e `B`: Enquanto um modelo estiver selecionado, você é capaz de alterar seu eixo Y com as teclas `Y` e `B`
   - Scroll do mouse: Com um modelo selecionado, você pode mudar a escala do modelo
+  - `R`: Reseta a posição do modelo para as coordenadas {0.0f, 0.0f, 0.0f}
   - `Ctrl` e `barra de espaço`:  Alteram o eixo Y da câmera
 
 
