@@ -26,7 +26,7 @@ typedef struct Button {
     Color       buttonTextColor;
 } Button;
 
-void DrawTextBox(TextBox textBox, char* textBoxInfo);
+void DrawTextBox(TextBox textBox, char* textBoxInfo, Font font);
 void DrawButton(const char* buttonText, float buttonPositionX, float buttonPositionY, float buttonWidth, float buttonHeight, Color buttonColor);
 void DrawOriginLineAxis(float thickness, int slices);
 

@@ -96,7 +96,6 @@ int main(void){
 	static int wireFrameState			= DISABLE_WIREFRAME_MODE;
 	static int modelHit 				= 0;
 	static float rotationX 				= 0.0f, rotationY = 0.0f, rotationZ = 0.0f;
-	unsigned int numOfTrianglesInModel  = 0;
 	int toggleGrabModelState 			= 0;
 	static float sensivityScale			= 0.0f;
 	
@@ -119,15 +118,19 @@ int main(void){
 
 
 
-    /*
+	/*
 		Tudo o que for aparecer na tela deve ser carregado a partir daqui
-    */
-   char logInfo[] = "FPS: 60\nCamera position: 0.0, 0.0, 0.0 (mocked)";
+	*/
+   char bufferToTextBox[64];
+   Font font = LoadFont("assets/fonts/cascadia.mono.ttf");
 
    TextBox textBox = {
-		.textBoxColor 		= {0, 0, 0, 128},
-		.textBoxTextColor 	= WHITE,
-		.textBoxRectangle 	= { .x = 0, .y = 0, .height = 180, .width = 270}
+		.textBoxColor 		= {
+			0, 0, 0, 
+			256 * 0.85 // 85% de opacidade (== 10% de transparência) do fundo da textbox (depois faço um código melhor)
+		},
+		.textBoxTextColor 	= LIME,
+		.textBoxRectangle 	= { .x = 0, .y = SCREEN_H - 70, .height = 70, .width = 320}
    };
 
 
@@ -171,8 +174,9 @@ int main(void){
         BeginDrawing();
         ClearBackground(LIGHTGRAY);
 
+		
 		BeginMode3D(cam);
-
+		
 		// Grossura, Numero de faces
     	DrawOriginLineAxis(THICKNESS_OF_ORIGIN_LINES, NUM_OF_FACES_ORIGIN_LINES);
 
@@ -260,7 +264,7 @@ int main(void){
 						        ptrSelectedEntity->positionInWorld.z = hitPoint.z;
 
 								UpdateBoundingBoxOfModel(ptrSelectedEntity);
-
+								
 						        // Ajustando o center point
 						        ptrSelectedEntity->centerPoint = CalculateTheCenterPointOfModel(ptrSelectedEntity->bounds.min, ptrSelectedEntity->bounds.max);
 					    	}
@@ -295,9 +299,9 @@ int main(void){
 				ptrSelectedEntity->scale += newScaleToModel;
 				UpdateBoundingBoxOfModel(ptrSelectedEntity);
 			}
-
+			
 		}
-
+		
 		/*
 			Reset da posição do modelo para a origem (0, 0, 0)
 		*/
@@ -342,7 +346,19 @@ int main(void){
 		// FIM 
 		EndMode3D();
 		
-		DrawTextBox(textBox, logInfo);
+		// Desenhando a fonte (debug)
+		
+		snprintf(
+			bufferToTextBox,
+			sizeof(bufferToTextBox),
+			"FPS: %d\nCamera position: %.2f, %.2f, %.2f",
+			GetFPS(),
+			cam.position.x,
+			cam.position.y,
+			cam.position.z
+		);
+
+		DrawTextBox(textBox, bufferToTextBox, font);
    		EndDrawing();
    		
    	 }	 // Fim do loop while
@@ -351,6 +367,8 @@ int main(void){
    	for(int i = 0; i < MAX_ENTITIES_IN_WORLD; i++){
    		UnloadModel(arrayEntity[i].model);
    	}
+
+	UnloadFont(font);
 
     CloseWindow();
     

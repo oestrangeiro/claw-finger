@@ -8,7 +8,7 @@
 	uma textbox
 */
 
-void DrawTextBox(TextBox textBox, char* textBoxInfo){
+void DrawTextBox(TextBox textBox, char* textBoxInfo, Font font){
 
     strcpy(textBox.textInfo, textBoxInfo);
 
@@ -19,7 +19,16 @@ void DrawTextBox(TextBox textBox, char* textBoxInfo){
         textBox.textBoxRectangle.height,
         textBox.textBoxColor
     );
-	DrawText(textBox.textInfo, textBox.textBoxRectangle.x, textBox.textBoxRectangle.y, FONT_SIZE_OF_TEXTBOX, WHITE);
+	
+	DrawTextEx(
+				font,
+				textBox.textInfo,
+				(Vector2) {textBox.textBoxRectangle.x,textBox.textBoxRectangle.y},
+				FONT_SIZE_OF_TEXTBOX,
+				1.0f,
+				BLUE
+		);
+	
 
 }
 
