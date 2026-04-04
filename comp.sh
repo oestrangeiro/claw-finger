@@ -8,4 +8,5 @@ gcc main.c src/*.c \
 -Lvendor/raylib/lib \
 -lraylib \
 -lGL -lm -lpthread -ldl -lrt -lX11 \
+-Wall -Wextra \
 -o $OUTPUT && ./$OUTPUT
